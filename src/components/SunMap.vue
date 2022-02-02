@@ -1,37 +1,39 @@
 <template>
-  <div class="hello">
+  <div class="sunmap">
     <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
+      <l-map style="height: 600px" :zoom="zoom" :center="center">
+      <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
+      <LHeatmap :latLngs=latLngArray :max="maxValue" :radius="15"></LHeatmap>
+      </l-map>
   </div>
 </template>
 
 <script>
+import { LMap, LTileLayer } from 'vue2-leaflet';
+import LHeatmap from './Vue2LeafletHeatmap.vue';
+// import LHeatmap from './Vue2LeafletHeatmapForked.vue';
+// import LHotline from 'vue2-leaflet-hotline';
+
 export default {
-  name: 'HelloWorld',
+  name: 'SunMap',
   props: {
     msg: String,
   },
+  components: {
+    LMap,
+    LTileLayer,
+    LHeatmap,
+  },
+  data() {
+    return {
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution:
+        '&copy; <a target="_blank" href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      zoom: 15,
+      center: [51.50, 30.5],
+      latLngArray: [[50.5, 30.5, 40], [50.51, 30.51, 80]],
+      maxValue: 100,
+    };
+  },
 };
 </script>
-
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
-</style>
