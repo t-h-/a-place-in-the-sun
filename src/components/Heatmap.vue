@@ -1,5 +1,5 @@
 <template>
-  <div style='display: none'>
+  <div class="heat-map">
     <slot v-if='ready'></slot>
   </div>
 </template>
@@ -98,7 +98,6 @@ export default {
     if (this.gradient) {
       // options.gradient = this.gradient;
     }
-
     this.mapObject = L.heatLayer(this.latLng, options);
     DomEvent.on(this.mapObject, this.$listeners);
     propsBinder(this, this.mapObject, props);
