@@ -10,12 +10,10 @@
   "dependencies": {
     "core-js": "^3.6.5",
     "leaflet": "^1.7.1",
-    "leaflet-hotline": "^0.4.0",
-    "leaflet.heat": "^0.2.0",
+    "leaflet.heat": "github:Harvinator/Leaflet.heat#patch-1",
     "vue": "^2.6.11",
     "vue-router": "^3.2.0",
     "vue2-leaflet": "^2.7.1",
-    "vue2-leaflet-hotline": "^1.0.1",
     "vuex": "^3.4.0"
   },
   "devDependencies": {

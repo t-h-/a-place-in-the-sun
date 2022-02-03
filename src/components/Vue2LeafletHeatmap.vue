@@ -96,7 +96,7 @@ export default {
       options.max = this.max;
     }
     if (this.gradient) {
-      // options.gradient = this.gradient;
+      options.gradient = this.gradient;
     }
 
     this.mapObject = L.heatLayer(this.latLng, options);
