@@ -1,7 +1,7 @@
 <template>
-  <div class="sunmap">
+  <div class="sunmap" ref="rootC">
     <h1>{{ msg }}</h1>
-      <l-map ref="leafletMap" @moveend="recalc" style="height: 600px" :zoom="zoom" :center="center">
+      <l-map ref="leafletMap" @moveend="onMoveEnd" style="height: 600px" :zoom="zoom" :center="center">
       <l-tile-layer :url="url" :attribution="attribution"></l-tile-layer>
       <LHeatmap ref="heatmapLayer" :latLng=latLngArray :radius=radius :blur=blur :gradient=gradient :max=max></LHeatmap>
       </l-map>
@@ -29,30 +29,40 @@ export default {
       attribution:
         '&copy; <a target="_blank" href="http://osm.org/copyright">OpenStreetMap</a> contributors',
       zoom: 11,
-      center: [50.50, 30.5],
-      latLngArray: [
-        [50.50, 30.50, 40],
-        [50.50, 30.51, 80.80],
-        [50.50, 30.52, 80.80],
-        [50.50, 30.53, 80.80],
-        [50.50, 30.64, 50],
-        [50.50, 30.74, 80.80],
-      ],
+      center: [46.2353601361914, 6.200332068813093],
+      latLngArray: [],
+      sunIntensities: {},
       max: null,
       radius: 100,
       blur: 30,
       gradient: { 0.1: 'green', 0.5: 'yellow', 1.0: 'orange' },
     };
   },
+  async mounted() {
+    await this.$nextTick();
+    this.onMoveEnd();
+  },
   methods: {
-    recalc(mapObject) {
-      console.log('recalc');
-      console.log(mapObject);
+    async onMoveEnd(mapObject) {
       const bnds = this.$refs.leafletMap.mapObject.getBounds();
-      console.log(bnds);
-      this.latLngArray.push([50.45, 30.74, 80.80]);
-      this.$refs.heatmapLayer.addLatLng([50.55, 30.74, 80.80]);
+      // const bnds = [lat, lng]; // this.$refs.leafletMap.mapObject.getBounds();
+      const southWest = bnds.getSouthWest();
+      const northEast = bnds.getNorthEast();
+      const pixelsY = this.$refs.rootC.clientHeight;
+      const pixelsX = this.$refs.rootC.clientWidth;
+      await this.$store.dispatch('queryAllPointsInBounds', {
+        southWest, northEast, pixelsX, pixelsY,
+      });
+      this.$store.dispatch('sampleLatLngArray', { southWest, northEast });
+      const lla = this.$store.getters.getLatLngArray;
+      this.$refs.heatmapLayer.setLatLngs(lla);
     },
   },
 };
 </script>
+
+<style>
+.leaflet-heatmap-layer {
+  opacity: .7;
+}
+</style>

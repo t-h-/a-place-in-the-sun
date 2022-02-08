@@ -1,6 +1,5 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import Home from '../views/Home.vue';
 import Sun from '../views/Sun.vue';
 
 Vue.use(VueRouter);
@@ -8,11 +7,6 @@ Vue.use(VueRouter);
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: Home,
-  },
-  {
-    path: '/sun',
     name: 'Sun',
     component: Sun,
   },
