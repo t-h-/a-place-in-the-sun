@@ -53,7 +53,9 @@ export default {
       await this.$store.dispatch('queryAllPointsInBounds', {
         southWest, northEast, pixelsX, pixelsY,
       });
-      this.$store.dispatch('sampleLatLngArray', { southWest, northEast });
+      this.$store.dispatch('sampleLatLngArray2', {
+        southWest, northEast, pixelsX, pixelsY,
+      });
       const lla = this.$store.getters.getLatLngArray;
       this.$refs.heatmapLayer.setLatLngs(lla);
     },
