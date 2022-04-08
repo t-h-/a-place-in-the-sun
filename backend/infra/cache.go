@@ -20,14 +20,14 @@ type cache struct {
 	logger log.Logger
 }
 
-func NewCache(cacheClient *redis.Client, logger log.Logger) (sunnyness.Cache, error) {
+func NewCache(cacheClient *redis.Client, logger log.Logger) sunnyness.Cache {
 	return &cache{
 		client: cacheClient,
 		logger: log.With(logger, "cache", "redisTODO"),
-	}, nil
+	}
 }
 
-func (cache *cache) GetSunnyness(ctx context.Context, lat float64, lng float64) (int, error) {
+func (cache *cache) GetSunnyness(ctx context.Context, lat float32, lng float32) (int, error) {
 	val, err := cache.client.Get(fmt.Sprintf("%f", lat)).Int() // TODO add composite key
 	if err != nil {
 		return -1, ErrIdNotFound
@@ -36,7 +36,7 @@ func (cache *cache) GetSunnyness(ctx context.Context, lat float64, lng float64) 
 	return val, nil
 }
 
-func (cache *cache) SetSunnyness(ctx context.Context, lat float64, lng float64, val int) (string, error) {
+func (cache *cache) SetSunnyness(ctx context.Context, lat float32, lng float32, val int) (string, error) {
 	err := cache.client.Set(fmt.Sprintf("%f", lat), 100, 60) // TODO add composite key, make expiration time configurable
 	if err != nil {
 		// TODO error handling

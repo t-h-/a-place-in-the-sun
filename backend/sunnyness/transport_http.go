@@ -38,7 +38,6 @@ func newServerFinalizer(logger kitlog.Logger) kithttp.ServerFinalizerFunc {
 
 func decodeGetSunnynessGridRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 	var req GetSunnynessGridRequest
-	fmt.Println("-------->>>>into Decoding")
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}

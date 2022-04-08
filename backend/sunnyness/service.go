@@ -8,8 +8,8 @@ import (
 )
 
 type Cache interface {
-	GetSunnyness(ctx context.Context, lat float64, lng float64) (int, error)             // TODO wrap into coord object
-	SetSunnyness(ctx context.Context, lat float64, lng float64, val int) (string, error) // wrap into coord object
+	GetSunnyness(ctx context.Context, lat float32, lng float32) (int, error)             // TODO wrap into coord object
+	SetSunnyness(ctx context.Context, lat float32, lng float32, val int) (string, error) // wrap into coord object
 }
 
 type SunnynessService interface {
@@ -31,8 +31,9 @@ func NewService(cache Cache, logger log.Logger) SunnynessService {
 func (s *sunynessservice) GetGrid(ctx context.Context, b Box) (SunnynessGrid, error) {
 	logger := log.With(s.logger, "method", "Create") // ?!
 
-	level.Info(logger).Log("info", nil) // TODO eh okay, stuff
-	arr := [][]int{{int(b.TopLeftLat), int(b.TopLeftLng)}, {int(b.BottomRightLat), int(b.BottomRightLng)}}
+	level.Info(logger).Log("SERV", "getting grid", "a", b.BottomRightLat) // TODO eh okay, stuff
+	//arr := [][]int{{int(b.TopLeftLat), int(b.TopLeftLng)}, {int(b.BottomRightLat), int(b.BottomRightLng)}}
+	arr := []Point{{Lat: b.TopLeftLat, Lng: b.TopLeftLng, Val: b.TopLeftLng}, {Lat: b.BottomRightLat, Lng: b.BottomRightLng, Val: b.BottomRightLng}}
 
 	return SunnynessGrid{
 		Values: arr,
@@ -40,12 +41,18 @@ func (s *sunynessservice) GetGrid(ctx context.Context, b Box) (SunnynessGrid, er
 }
 
 type Box struct {
-	TopLeftLat     float64 `json:"top_left_lat"`
-	TopLeftLng     float64 `json:"top_left_lng"`
-	BottomRightLat float64 `json:"bottom_right_lat"`
-	BottomRightLng float64 `json:"bottom_right_lng"`
+	TopLeftLat     float32 `json:"top_left_lat"`
+	TopLeftLng     float32 `json:"top_left_lng"`
+	BottomRightLat float32 `json:"bottom_right_lat"`
+	BottomRightLng float32 `json:"bottom_right_lng"`
 }
 
 type SunnynessGrid struct {
-	Values [][]int
+	Values []Point `json:"values"`
+}
+
+type Point struct {
+	Lat float32 `json:"lat"`
+	Lng float32 `json:"lng"`
+	Val float32 `json:"val"`
 }

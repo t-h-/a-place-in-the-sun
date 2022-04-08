@@ -17,19 +17,28 @@ func main() {
 	logger = log.NewLogfmtLogger(os.Stderr)
 	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "listen", "8083", "caller", log.DefaultCaller)
 
-	redisConn := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
-
-	cache, err := infra.NewCache(redisConn, logger)
+	redisConn, err := connectToRedis()
 	if err != nil {
-		logger.Log("TODO SOMETHING!")
+		logger.Log("RDIS", "redis conn failed")
+		//panic(err)
 	}
+
+	cache := infra.NewCache(redisConn, logger)
 
 	svc := sunnyness.NewService(cache, logger)
 	router := sunnyness.NewHttpServer(svc, logger)
 	logger.Log("msg", "HTTP", "addr", "8083")
 	logger.Log("err", http.ListenAndServe(":8083", router))
+}
+
+func connectToRedis() (*redis.Client, error) {
+	c := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	_, err := c.Ping().Result()
+
+	return c, err
 }
