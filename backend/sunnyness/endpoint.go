@@ -4,34 +4,35 @@ import (
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/google/uuid"
 )
 
-type storeRequest struct {
-	TalkName string `json:"talk_name"`
-	Score    int    `json:"score,string"`
-	Email    string
+type GetSunnynessGridRequest struct {
+	TopLeftLat     float64 `json:"top_left_lat"`
+	TopLeftLng     float64 `json:"top_left_lng"`
+	BottomRightLat float64 `json:"bottom_right_lat"`
+	BottomRightLng float64 `json:"bottom_right_lng"`
 }
 
-type storeResponse struct {
-	Uuid string `json:"uuid,omitempty"`
-	Err  string `json:"err,omitempty"` // errors don't JSON-marshal, so we use a string
+type GetSunnynessGridResponse struct {
+	Values [][]int `json:"values,omitempty"`
+	Err    string  `json:"err,omitempty"` // errors don't JSON-marshal, so we use a string
 }
 
-func makeStoreEndpoint(svc Service) endpoint.Endpoint {
+// makes function that decodes request to domain object and encodes domain response to request response
+func makeGetSunnynessGridEndpoint(svc SunnynessService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(storeRequest)
-		v := Vote{
-			ID:       uuid.New(),
-			Email:    req.Email,
-			TalkName: req.TalkName,
-			Score:    req.Score,
+		req := request.(GetSunnynessGridRequest)
+		box := Box{
+			TopLeftLat:     req.TopLeftLat,
+			TopLeftLng:     req.TopLeftLng,
+			BottomRightLat: req.BottomRightLat,
+			BottomRightLng: req.BottomRightLng,
 		}
-		_, err := svc.Store(ctx, v)
+		grid, err := svc.GetGrid(ctx, box)
 		if err != nil {
-			return storeResponse{"", err.Error()}, err
+			return GetSunnynessGridResponse{nil, err.Error()}, err
 		}
 
-		return storeResponse{v.ID.String(), ""}, err
+		return GetSunnynessGridResponse{grid.Values, ""}, err
 	}
 }

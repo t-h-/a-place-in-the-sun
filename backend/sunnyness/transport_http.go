@@ -3,6 +3,7 @@ package sunnyness
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	kitlog "github.com/go-kit/kit/log"
@@ -11,39 +12,39 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func NewHttpServer(svc Service, logger kitlog.Logger) *mux.Router {
+func NewHttpServer(svc SunnynessService, logger kitlog.Logger) *mux.Router {
 	options := []kithttp.ServerOption{
 		kithttp.ServerErrorHandler(transport.NewLogErrorHandler(logger)),
 		kithttp.ServerFinalizer(newServerFinalizer(logger)),
 	}
-	storeHandler := kithttp.NewServer(
-		makeStoreEndpoint(svc),
-		decodeStoreRequest,
-		encodeResponse,
+	getSunnynessGridHandler := kithttp.NewServer(
+		makeGetSunnynessGridEndpoint(svc),
+		decodeGetSunnynessGridRequest,
+		encodeGetSunnynessGridResponse,
 		options...,
 	)
 	r := mux.NewRouter()
 	// r.Use(middleware.IsAuthenticatedMiddleware)
-	r.Methods("POST").Path("/v1/vote").Handler(storeHandler)
+	r.Methods("GET").Path("/sunnyness/grid").
+		Handler(getSunnynessGridHandler)
 	return r
 }
 
 func newServerFinalizer(logger kitlog.Logger) kithttp.ServerFinalizerFunc {
 	return func(ctx context.Context, code int, r *http.Request) {
-		logger.Log("status", code, "path", r.RequestURI, "method", r.Method)
+		logger.Log("status", code, "path", r.RequestURI, "method", r.Method, "params", fmt.Sprint(r.URL.Query()))
 	}
 }
 
-func decodeStoreRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-	var request storeRequest
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+func decodeGetSunnynessGridRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	var req GetSunnynessGridRequest
+	fmt.Println("-------->>>>into Decoding")
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return nil, err
 	}
-
-	request.Email = r.Header.Get("email")
-	return request, nil
+	return req, nil
 }
 
-func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeGetSunnynessGridResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
 	return json.NewEncoder(w).Encode(response)
 }
