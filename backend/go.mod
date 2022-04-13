@@ -6,8 +6,8 @@ require (
 	github.com/go-kit/kit v0.12.0
 	github.com/go-kit/log v0.2.0
 	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.7.3
+	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 )
 
 require (

@@ -7,7 +7,8 @@ import (
 )
 
 type GetSunnynessGridRequest struct {
-	Box Box `json:"box"`
+	Box       Box       `json:"box"`
+	NumPoints NumPoints `json:"num_points"`
 }
 
 type GetSunnynessGridResponse struct {
@@ -19,8 +20,8 @@ type GetSunnynessGridResponse struct {
 func makeGetSunnynessGridEndpoint(svc SunnynessService) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(GetSunnynessGridRequest)
-		box := req.Box
-		grid, err := svc.GetGrid(ctx, box)
+
+		grid, err := svc.GetGrid(req.Box, req.NumPoints)
 		if err != nil {
 			return GetSunnynessGridResponse{SunnynessGrid{}, err.Error()}, err
 		}

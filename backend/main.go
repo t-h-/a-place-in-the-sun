@@ -24,8 +24,9 @@ func main() {
 	}
 
 	cache := infra.NewCache(redisConn, logger)
+	api := infra.NewApi(logger)
 
-	svc := sunnyness.NewService(cache, logger)
+	svc := sunnyness.NewService(cache, api, logger)
 	router := sunnyness.NewHttpServer(svc, logger)
 	logger.Log("msg", "HTTP", "addr", "8083")
 	logger.Log("err", http.ListenAndServe(":8083", router))

@@ -130,14 +130,14 @@ export default new Vuex.Store({
 
       Object.keys(context.state.sunnynessCache)
       .filter((lat) => lat > southWest.lat - stepLat && lat < northEast.lat + stepLat)
-        .forEach((lat) => {
-          const lngObj = context.state.sunnynessCache[lat];
-          Object.keys(lngObj)
-          .filter((lng) => lng > southWest.lng - stepLng && lng < northEast.lng + stepLng)
-            .forEach((lng) => {
-              const sn = lngObj[lng];
-              latLngArray.push([lat, lng, sn]);
-            });
+      .forEach((lat) => {
+        const lngObj = context.state.sunnynessCache[lat];
+        Object.keys(lngObj)
+        .filter((lng) => lng > southWest.lng - stepLng && lng < northEast.lng + stepLng)
+          .forEach((lng) => {
+            const sn = lngObj[lng];
+            latLngArray.push([lat, lng, sn]);
+          });
         });
       context.commit('setLatLngArray', latLngArray);
     },

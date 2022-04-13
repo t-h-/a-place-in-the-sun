@@ -2,7 +2,6 @@ package infra
 
 import (
 	"backend/sunnyness"
-	"context"
 	"errors"
 	"fmt"
 
@@ -27,19 +26,31 @@ func NewCache(cacheClient *redis.Client, logger log.Logger) sunnyness.Cache {
 	}
 }
 
-func (cache *cache) GetSunnyness(ctx context.Context, lat float32, lng float32) (int, error) {
-	val, err := cache.client.Get(fmt.Sprintf("%f", lat)).Int() // TODO add composite key
+func (cache *cache) GetSunnyness(p *sunnyness.Point) (float32, error) {
+	val, err := cache.client.Get(fmt.Sprintf("%f", p.Lat)).Float32() // TODO add composite key
 	if err != nil {
+		// TODO correct error handling
 		return -1, ErrIdNotFound
 	}
 
 	return val, nil
 }
 
-func (cache *cache) SetSunnyness(ctx context.Context, lat float32, lng float32, val int) (string, error) {
-	err := cache.client.Set(fmt.Sprintf("%f", lat), 100, 60) // TODO add composite key, make expiration time configurable
+func (cache *cache) SetSunnyness(p *sunnyness.Point) (string, error) {
+	err := cache.client.Set(fmt.Sprintf("%f", p.Lat), 100, 60) // TODO add composite key, make expiration time configurable
 	if err != nil {
 		// TODO error handling
+	}
+
+	return "sunnyness set succesfully", nil
+}
+
+func (cache *cache) SetSunnynesses(points []*sunnyness.Point) (string, error) {
+	for _, p := range points {
+		_, err := cache.SetSunnyness(p)
+		if err != nil {
+			// TODO error handling
+		}
 	}
 
 	return "sunnyness set succesfully", nil
