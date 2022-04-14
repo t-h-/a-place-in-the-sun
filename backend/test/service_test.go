@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
-	"backend/infra"
+	"backend/mocks"
 	"backend/sunnyness"
 
 	"github.com/go-kit/kit/log"
-	"github.com/go-redis/redis"
+	"github.com/golang/mock/gomock"
 )
 
 func TestSnap(t *testing.T) {
@@ -35,38 +35,33 @@ func TestCreateCoords(t *testing.T) {
 func TestGetGrid(t *testing.T) {
 	fmt.Println("TEST GetGrid()")
 
-	var logger log.Logger
-	logger = log.NewLogfmtLogger(os.Stderr)
-	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "listen", "8083", "caller", log.DefaultCaller)
+	svc, mock_api, mock_cache := injectMocks(t)
 
-	redisConn, err := connectToRedis()
-	if err != nil {
-		logger.Log("RDIS", "redis conn failed")
-		//panic(err)
-	}
+	mock_cache.EXPECT().GetSunnyness(gomock.Any()).AnyTimes().Return(float32(1.1), nil)
+	mock_cache.EXPECT().SetSunnyness(gomock.Any()).AnyTimes().Return("cool", nil)
+	mock_cache.EXPECT().SetSunnynesses(gomock.Any()).AnyTimes().Return("cool", nil)
+	mock_api.EXPECT().QueryPoints(gomock.Any()).AnyTimes().Return()
 
-	cache := infra.NewCache(redisConn, logger)
-	api := infra.NewApi(logger)
-
-	srv := sunnyness.NewService(cache, api, logger)
 	b := sunnyness.Box{TopLeftLat: 1.11, TopLeftLng: 1.11, BottomRightLat: 3.33, BottomRightLng: 3.33}
 	n := sunnyness.NumPoints{Lat: 5, Lng: 5}
-	grid, _ := srv.GetGrid(b, n)
+	grid, _ := svc.GetGrid(b, n)
 	fmt.Println(grid)
 	// if snap != 0.6 {
 	// 	t.Fatalf(`Snap wrong %v`, snap)
 	// }
 }
 
-// TERRIIIIBBLEEEE, in absence of go mocking knowledge...
-func connectToRedis() (*redis.Client, error) {
-	c := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
+func injectMocks(t *testing.T) (sunnyness.SunnynessService, *mocks.MockWeatherApi, *mocks.MockCache) {
 
-	_, err := c.Ping().Result()
+	var logger log.Logger
+	logger = log.NewLogfmtLogger(os.Stderr)
+	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "listen", "8083", "caller", log.DefaultCaller)
 
-	return c, err
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	cache := mocks.NewMockCache(ctrl)
+
+	api := mocks.NewMockWeatherApi(ctrl)
+
+	return sunnyness.NewService(cache, api, logger), api, cache
 }

@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"testing"
 
@@ -11,15 +12,22 @@ import (
 	"github.com/go-kit/log"
 )
 
-func TestQuery(t *testing.T) {
+// TODO load test rate limiting
+func TQuery(t *testing.T) {
+
+	api := createApi()
+
+	ps := []*sunnyness.Point{{Lat: 1.11, Lng: 2.22, Val: math.MaxFloat32}, {Lat: 3.33, Lng: 4.44, Val: math.MaxFloat32}}
+	api.QueryPoints(ps)
+	if len(ps) != 2 {
+		t.Fatalf(`res wrong %v`, ps)
+	}
+	fmt.Println(ps)
+}
+
+func createApi() sunnyness.WeatherApi {
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
 
-	ps := []*sunnyness.Point{{Lat: 1.11, Lng: 2.22}, {Lat: 3.33, Lng: 4.44}}
-	api := infra.NewApi(logger)
-	res := api.QueryPoints(ps)
-	if len(res) != 2 {
-		t.Fatalf(`res wrong %v`, res)
-	}
-	fmt.Println(res)
+	return infra.NewApi(logger)
 }

@@ -36,30 +36,40 @@ func NewApi(logger log.Logger) *api {
 	}
 }
 
-func (api *api) QueryPoints(points []*sunnyness.Point) []*sunnyness.Point {
-	reqURL := "http://api.weatherapi.com/v1/current.json"
-	req, _ := http.NewRequest("GET", reqURL, nil)
+func (api *api) QueryPoints(points []*sunnyness.Point) {
 	for _, p := range points {
-		coords := fmt.Sprintf("%v,%v", p.Lat, p.Lng)
-		q := req.URL.Query()
-		q.Add("key", ApiKey)
-		q.Add("q", coords)
-		q.Add("aqi", "no")
-		req.URL.RawQuery = q.Encode()
-		resp, err := api.Do(req)
+		err := api.QueryPoint(p)
 		if err != nil {
 			// TODO error handling
-			continue
 		}
-
-		res, err := unmarshal(resp)
-
-		p.Val = float32(100 - res.Current.Cloud)
 	}
-	return points
 }
 
-func (c *api) Do(req *http.Request) (*http.Response, error) {
+func (api *api) QueryPoint(p *sunnyness.Point) error {
+	reqURL := "http://api.weatherapi.com/v1/current.json"
+	req, _ := http.NewRequest("GET", reqURL, nil)
+	coords := fmt.Sprintf("%v,%v", p.Lat, p.Lng)
+	q := req.URL.Query()
+	q.Add("key", ApiKey)
+	q.Add("q", coords)
+	q.Add("aqi", "no")
+	req.URL.RawQuery = q.Encode()
+	resp, err := api.do(req)
+	if err != nil {
+		// TODO error handling
+		return ApiErr
+	}
+
+	res, err := unmarshal(resp)
+	if err != nil {
+		// TODO error handling
+		return err
+	}
+	p.Val = float32(100 - res.Current.Cloud)
+	return nil
+}
+
+func (c *api) do(req *http.Request) (*http.Response, error) {
 	ctx := context.Background()
 	err := c.Ratelimiter.Wait(ctx)
 	if err != nil {
