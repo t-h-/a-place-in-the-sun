@@ -12,8 +12,10 @@ require (
 )
 
 require (
+	github.com/RobinRCM/sklearn v0.0.0-20200210161243-a35b0cbbede2 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
+	gonum.org/v1/gonum v0.6.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 

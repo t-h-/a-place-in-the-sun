@@ -5,90 +5,122 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"context"
 	"io/ioutil"
 	"net/http"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/go-kit/log"
 
 	"golang.org/x/time/rate"
 )
-
-const ApiKey = "591b7934afcf484fa3191051223101"
 
 var (
 	ApiErr = errors.New("Unable to handle Api Request")
 )
 
 type api struct {
-	client      *http.Client
-	Ratelimiter *rate.Limiter
-	logger      log.Logger
+	client               *http.Client
+	Ratelimiter          *rate.Limiter
+	logger               log.Logger
+	ApiKey               string
+	MaxRequestsPerSecond int
+	MaxRequestBurst      int
 }
 
-func NewApi(logger log.Logger) *api {
+func NewApi(apiKey string, maxRequestsPerSecond int, maxRequestBurst int, logger log.Logger) *api {
 	return &api{
-		client:      http.DefaultClient,
-		Ratelimiter: rate.NewLimiter(rate.Every(2*time.Second), 200),
-		logger:      log.With(logger, "cache", "apiTODO"),
+		client:               http.DefaultClient,
+		Ratelimiter:          rate.NewLimiter(rate.Every(time.Duration(1000/maxRequestsPerSecond)*time.Millisecond), maxRequestBurst),
+		logger:               log.With(logger, "api", "weatherapi.com"),
+		MaxRequestsPerSecond: maxRequestsPerSecond,
+		MaxRequestBurst:      maxRequestBurst,
+		ApiKey:               apiKey,
 	}
 }
 
 func (api *api) QueryPoints(points []*sunnyness.Point) {
+
+	var errs chan error = make(chan error, 1000)
+	var wg sync.WaitGroup
 	for _, p := range points {
-		err := api.QueryPoint(p)
-		if err != nil {
-			// TODO error handling
-		}
+		wg.Add(1)
+		go api.QueryPoint(p, &wg, errs)
 	}
+	go func() {
+		level.Info(api.logger).Log("432", "entering anonymous func")
+		wg.Wait()
+		level.Info(api.logger).Log("1234", "closing err channel")
+		close(errs)
+	}()
+
+	for er := range errs {
+		// TODO what to do with unqueried points?
+		level.Info(api.logger).Log("msg", "errs for querying point", "errs", er)
+	}
+	level.Info(api.logger).Log("huhu", "huhu")
 }
 
-func (api *api) QueryPoint(p *sunnyness.Point) error {
+func (api *api) QueryPoint(p *sunnyness.Point, wg *sync.WaitGroup, errs chan error) error {
+	defer wg.Done()
 	reqURL := "http://api.weatherapi.com/v1/current.json"
 	req, _ := http.NewRequest("GET", reqURL, nil)
 	coords := fmt.Sprintf("%v,%v", p.Lat, p.Lng)
 	q := req.URL.Query()
-	q.Add("key", ApiKey)
+	q.Add("key", api.ApiKey)
 	q.Add("q", coords)
-	q.Add("aqi", "no")
 	req.URL.RawQuery = q.Encode()
 	resp, err := api.do(req)
 	if err != nil {
+		level.Error(api.logger).Log("43", err)
 		// TODO error handling
+		errs <- err
 		return ApiErr
 	}
 
-	res, err := unmarshal(resp)
+	if resp.StatusCode != 200 {
+		level.Error(api.logger).Log("msg", "Not able to handle request", "status_code", resp.StatusCode)
+		errs <- err
+		return ApiErr
+	}
+
+	res, err := api.unmarshal(resp)
 	if err != nil {
 		// TODO error handling
+		level.Error(api.logger).Log("5")
+		errs <- err
 		return err
 	}
 	p.Val = float32(100 - res.Current.Cloud)
 	return nil
 }
 
-func (c *api) do(req *http.Request) (*http.Response, error) {
+func (api *api) do(req *http.Request) (*http.Response, error) {
 	ctx := context.Background()
-	err := c.Ratelimiter.Wait(ctx)
+	err := api.Ratelimiter.Wait(ctx)
 	if err != nil {
+		level.Error(api.logger).Log("9") // TODO error handling
 		return nil, err
 	}
-	resp, err := c.client.Do(req)
+	level.Debug(api.logger).Log("msg", "Requesting point", "req", req.URL)
+	resp, err := api.client.Do(req)
 	if err != nil {
+		level.Error(api.logger).Log("6", err) // TODO error handling
 		return nil, err
 	}
 	return resp, nil
 }
 
-func unmarshal(resp *http.Response) (Response, error) {
+func (api *api) unmarshal(resp *http.Response) (Response, error) {
 	defer resp.Body.Close()
-	fdsa, _ := ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 
 	var result Response
-	if err := json.Unmarshal(fdsa, &result); err != nil {
-		fmt.Println("Can not unmarshal JSON") // TODO proper logging and error handling
+	if err := json.Unmarshal(body, &result); err != nil {
+		level.Error(api.logger).Log("msg", "Can not unmarshal JSON") // TODO proper logging and error handling
 		return Response{}, err
 	}
 	return result, nil

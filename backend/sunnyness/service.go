@@ -2,13 +2,14 @@ package sunnyness
 
 import (
 	"math"
+	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 )
 
 const NumDecimalPlaces int = 1
-const MinDegreeStep float64 = 0.1
+const MinDegreeStep float32 = 0.1
 
 //go:generate mockgen -destination=../mocks/mock_cache.go -package=mocks . Cache
 type Cache interface {
@@ -41,12 +42,40 @@ func NewService(cache Cache, api WeatherApi, logger log.Logger) SunnynessService
 	}
 }
 
+func max(a float32, b float32) float32 {
+	if a < b {
+		return b
+	}
+	return a
+}
+
+func sign(f float32) float32 {
+	if f == 0 {
+		return 0
+	}
+	if f < 0 {
+		return -1
+	} else {
+		return 1
+	}
+}
+
+func abs(f float32) float32 {
+	return f * sign(f)
+}
+
 func (s *Sunynessservice) GetGrid(b Box, n NumPoints) (SunnynessGrid, error) {
-	logger := log.With(s.logger, "method", "Create") // ?!
+	start := time.Now()
+	logger := log.With(s.logger, "method", "GetGrid")
 	level.Info(logger).Log("SERV", "getting grid", "a", b.BottomRightLat)
 
-	stepLat := float32(math.Max(float64((b.TopLeftLat-b.BottomRightLat)/float32(n.Lat)), MinDegreeStep)) // write own max method for float32
-	stepLng := float32(math.Max(float64((b.TopLeftLng-b.BottomRightLng)/float32(n.Lng)), MinDegreeStep))
+	var diffLat float32 = b.BottomRightLat - b.TopLeftLat
+	var diffLng float32 = b.BottomRightLng - b.TopLeftLng
+	stepLat := max(abs(diffLat)/float32(n.Lat), MinDegreeStep)
+	stepLng := max(abs(diffLng)/float32(n.Lng), MinDegreeStep)
+
+	stepLat *= sign(diffLat)
+	stepLng *= sign(diffLng)
 
 	stepLat = floorToDecimal(stepLat, NumDecimalPlaces)
 	stepLng = floorToDecimal(stepLng, NumDecimalPlaces)
@@ -69,7 +98,9 @@ func (s *Sunynessservice) GetGrid(b Box, n NumPoints) (SunnynessGrid, error) {
 	s.api.QueryPoints(queryPoints)
 	s.cache.SetSunnynesses(queryPoints)
 
+	elapsed := time.Since(start)
 	// TODO interpolation service here, in case there are too few points
+	level.Info(logger).Log("Elapsed time", elapsed)
 
 	return SunnynessGrid{
 		Points: append(cachePoints, queryPoints...),
@@ -77,11 +108,11 @@ func (s *Sunynessservice) GetGrid(b Box, n NumPoints) (SunnynessGrid, error) {
 }
 
 func CreateSnappedGridCoordinates(b Box, stepLat float32, stepLng float32) []*Point {
-	latStart := Snap(floorToDecimal(b.TopLeftLat, NumDecimalPlaces), stepLat)
-	lngStart := Snap(floorToDecimal(b.TopLeftLng, NumDecimalPlaces), stepLng)
+	latStart := Snap(b.TopLeftLat, stepLat)
+	lngStart := Snap(b.TopLeftLng, stepLng)
 	var res []*Point
-	for lat := latStart; lat < b.BottomRightLat+stepLat; lat += stepLat {
-		for lng := lngStart; lng < b.BottomRightLng; lng += stepLng {
+	for lat := latStart; abs(lat) < abs(b.BottomRightLat+stepLat); lat += stepLat {
+		for lng := lngStart; abs(lng) < abs(b.BottomRightLng+stepLng); lng += stepLng {
 			res = append(res, NewPoint(lat, lng))
 		}
 	}
@@ -93,9 +124,19 @@ func floorToDecimal(f float32, decimalPlaces int) float32 {
 	return float32(math.Floor(float64(f*float32(factor))) / factor)
 }
 
-func Snap(val float32, scale float32) float32 {
+func mod(f1 float32, f2 float32) float32 {
+	return float32(math.Mod(float64(f1), float64(f2)))
+}
+
+// Snap snaps the given value to the
+func Snap(val float32, step float32) float32 {
 	flooredVal := floorToDecimal(val, NumDecimalPlaces)
-	res := flooredVal - float32(math.Mod(float64(flooredVal), float64(scale)))
+	var res float32
+	if sign(flooredVal) == sign(step) {
+		res = flooredVal - mod(flooredVal, step)
+	} else {
+		res = flooredVal - (step + mod(flooredVal, step))
+	}
 	return res
 }
 
@@ -125,6 +166,6 @@ func NewPoint(lat float32, lng float32) *Point {
 	return &Point{
 		Lat: floorToDecimal(lat, NumDecimalPlaces),
 		Lng: floorToDecimal(lng, NumDecimalPlaces),
-		Val: float32(math.NaN()),
+		Val: -1,
 	}
 }

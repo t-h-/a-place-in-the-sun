@@ -11,6 +11,7 @@ import (
 
 	"github.com/allegro/bigcache"
 	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 )
 
 var (
@@ -22,18 +23,18 @@ type inmemcache struct {
 	logger log.Logger
 }
 
-func NewInmemCache(logger log.Logger) *inmemcache {
+func NewInmemCache(lifeWindowSec int, logger log.Logger) *inmemcache {
 	bCache, err := bigcache.NewBigCache(bigcache.Config{
 		// number of shards (must be a power of 2)
 		Shards: 1024,
 
 		// time after which entry can be evicted
-		LifeWindow: 30 * time.Second,
+		LifeWindow: time.Duration(lifeWindowSec) * time.Second,
 
 		// Interval between removing expired entries (clean up).
 		// If set to <= 0 then no action is performed.
 		// Setting to < 1 second is counterproductive — bigcache has a one second resolution.
-		CleanWindow: 30 * time.Second,
+		CleanWindow: time.Duration(lifeWindowSec) * time.Second,
 
 		// rps * lifeWindow, used only in initial memory allocation
 		MaxEntriesInWindow: 1000 * 10 * 60,
@@ -67,12 +68,13 @@ func NewInmemCache(logger log.Logger) *inmemcache {
 
 	return &inmemcache{
 		sun:    bCache,
-		logger: log.With(logger, "cache", "inmem"), // TODO correct logging (all of the project)
+		logger: log.With(logger, "cache", "inmem"),
 	}
 }
 
 func (inmemcache *inmemcache) GetSunnyness(p *sunnyness.Point) (float32, error) {
 	bs, err := inmemcache.sun.Get(inmemcache.CreateCompositeKey(p))
+	// TODO error handling
 	if err != nil {
 		if errors.Is(err, bigcache.ErrEntryNotFound) {
 			return -1, InmemCacheErr
@@ -81,7 +83,12 @@ func (inmemcache *inmemcache) GetSunnyness(p *sunnyness.Point) (float32, error) 
 		return -1, fmt.Errorf("get: %w", err)
 	}
 
-	return ByteToFloat32(bs)
+	v, err := ByteToFloat32(bs)
+	if err != nil {
+		return -1, err
+	}
+	level.Debug(inmemcache.logger).Log("msg", "returning value from cache", "lat", p.Lat, "lng", p.Lng, "val", p.Val)
+	return v, nil
 }
 
 func (inmemcache *inmemcache) SetSunnyness(p *sunnyness.Point) error {
