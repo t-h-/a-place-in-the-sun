@@ -5,7 +5,7 @@
 package mocks
 
 import (
-	sunnyness "backend/sunnyness"
+	shared "backend/shared"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -35,7 +35,7 @@ func (m *MockCache) EXPECT() *MockCacheMockRecorder {
 }
 
 // CreateCompositeKey mocks base method.
-func (m *MockCache) CreateCompositeKey(arg0 *sunnyness.Point) string {
+func (m *MockCache) CreateCompositeKey(arg0 *shared.Point) string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateCompositeKey", arg0)
 	ret0, _ := ret[0].(string)
@@ -49,7 +49,7 @@ func (mr *MockCacheMockRecorder) CreateCompositeKey(arg0 interface{}) *gomock.Ca
 }
 
 // GetSunnyness mocks base method.
-func (m *MockCache) GetSunnyness(arg0 *sunnyness.Point) (float32, error) {
+func (m *MockCache) GetSunnyness(arg0 *shared.Point) (float32, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSunnyness", arg0)
 	ret0, _ := ret[0].(float32)
@@ -64,7 +64,7 @@ func (mr *MockCacheMockRecorder) GetSunnyness(arg0 interface{}) *gomock.Call {
 }
 
 // SetSunnyness mocks base method.
-func (m *MockCache) SetSunnyness(arg0 *sunnyness.Point) error {
+func (m *MockCache) SetSunnyness(arg0 *shared.Point) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetSunnyness", arg0)
 	ret0, _ := ret[0].(error)
@@ -78,7 +78,7 @@ func (mr *MockCacheMockRecorder) SetSunnyness(arg0 interface{}) *gomock.Call {
 }
 
 // SetSunnynesses mocks base method.
-func (m *MockCache) SetSunnynesses(arg0 []*sunnyness.Point) error {
+func (m *MockCache) SetSunnynesses(arg0 []*shared.Point) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetSunnynesses", arg0)
 	ret0, _ := ret[0].(error)

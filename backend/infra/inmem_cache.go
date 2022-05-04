@@ -1,7 +1,7 @@
 package infra
 
 import (
-	"backend/sunnyness"
+	s "backend/shared"
 	"bytes"
 	"encoding/binary"
 	"errors"
@@ -72,7 +72,7 @@ func NewInmemCache(lifeWindowSec int, logger log.Logger) *inmemcache {
 	}
 }
 
-func (inmemcache *inmemcache) GetSunnyness(p *sunnyness.Point) (float32, error) {
+func (inmemcache *inmemcache) GetSunnyness(p *s.Point) (float32, error) {
 	bs, err := inmemcache.sun.Get(inmemcache.CreateCompositeKey(p))
 	// TODO error handling
 	if err != nil {
@@ -91,7 +91,7 @@ func (inmemcache *inmemcache) GetSunnyness(p *sunnyness.Point) (float32, error) 
 	return v, nil
 }
 
-func (inmemcache *inmemcache) SetSunnyness(p *sunnyness.Point) error {
+func (inmemcache *inmemcache) SetSunnyness(p *s.Point) error {
 	f, err := Float32ToByte(p.Val)
 	if err != nil {
 		// TODO error handling
@@ -99,7 +99,7 @@ func (inmemcache *inmemcache) SetSunnyness(p *sunnyness.Point) error {
 	return inmemcache.sun.Set(inmemcache.CreateCompositeKey(p), f)
 }
 
-func (inmemcache *inmemcache) SetSunnynesses(points []*sunnyness.Point) error {
+func (inmemcache *inmemcache) SetSunnynesses(points []*s.Point) error {
 	for _, p := range points {
 		err := inmemcache.SetSunnyness(p)
 		if err != nil {
@@ -111,7 +111,7 @@ func (inmemcache *inmemcache) SetSunnynesses(points []*sunnyness.Point) error {
 	return nil
 }
 
-func (cache *inmemcache) CreateCompositeKey(p *sunnyness.Point) string {
+func (cache *inmemcache) CreateCompositeKey(p *s.Point) string {
 	return fmt.Sprintf("%v:%v", p.Lat, p.Lng)
 }
 

@@ -4,8 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"backend/infra"
+	s "backend/shared"
 	"backend/sunnyness"
+	"backend/weatherapi"
 
 	"github.com/go-kit/log"
 )
@@ -18,7 +19,7 @@ const MaxRequestBurst = 200
 func TestQuery(t *testing.T) {
 	var flooredStepLat float32 = 0.1
 	var flooredStepLng float32 = 0.1
-	b := sunnyness.Box{TopLeftLat: 9, TopLeftLng: 9, BottomRightLat: 100, BottomRightLng: 100}
+	b := s.Box{TopLeftLat: 9, TopLeftLng: 9, BottomRightLat: 100, BottomRightLng: 100}
 	ps := sunnyness.CreateSnappedGridCoordinates(b, flooredStepLat, flooredStepLng)
 
 	api := createApi()
@@ -30,9 +31,9 @@ func TestQuery(t *testing.T) {
 	// fmt.Println(ps)
 }
 
-func createApi() sunnyness.WeatherApi {
+func createApi() weatherapi.WeatherApi {
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
 
-	return infra.NewApi(ApiKey, MaxRequestsPerSecond, MaxRequestBurst, logger)
+	return weatherapi.NewApi(ApiKey, MaxRequestsPerSecond, MaxRequestBurst, logger)
 }

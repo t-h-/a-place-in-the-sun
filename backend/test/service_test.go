@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"backend/mocks"
+	s "backend/shared"
 	"backend/sunnyness"
 
 	"github.com/go-kit/kit/log"
@@ -45,7 +46,7 @@ func TestSnap(t *testing.T) {
 func TestCreateCoords(t *testing.T) {
 	var flooredStepLat float32 = 0.5
 	var flooredStepLng float32 = 0.5
-	b := sunnyness.Box{TopLeftLat: 1.11, TopLeftLng: 1.11, BottomRightLat: 3.33, BottomRightLng: 3.33}
+	b := s.Box{TopLeftLat: 1.11, TopLeftLng: 1.11, BottomRightLat: 3.33, BottomRightLng: 3.33}
 	grid := sunnyness.CreateSnappedGridCoordinates(b, flooredStepLat, flooredStepLng)
 	fmt.Println(grid)
 	// if snap != 0.6 {
@@ -63,8 +64,8 @@ func TestGetGrid(t *testing.T) {
 	mock_cache.EXPECT().SetSunnynesses(gomock.Any()).AnyTimes().Return("cool", nil)
 	mock_api.EXPECT().QueryPoints(gomock.Any()).AnyTimes().Return()
 
-	b := sunnyness.Box{TopLeftLat: 1.11, TopLeftLng: 1.11, BottomRightLat: 3.33, BottomRightLng: 3.33}
-	n := sunnyness.NumPoints{Lat: 5, Lng: 5}
+	b := s.Box{TopLeftLat: 1.11, TopLeftLng: 1.11, BottomRightLat: 3.33, BottomRightLng: 3.33}
+	n := s.NumPoints{Lat: 5, Lng: 5}
 	grid, _ := svc.GetGrid(b, n)
 	fmt.Println(grid)
 	// if snap != 0.6 {
@@ -83,6 +84,7 @@ func injectMocks(t *testing.T) (sunnyness.SunnynessService, *mocks.MockWeatherAp
 	cache := mocks.NewMockCache(ctrl)
 
 	api := mocks.NewMockWeatherApi(ctrl)
+	is := mocks.NewMockInterpolationService(ctrl)
 
-	return sunnyness.NewService(cache, api, logger), api, cache
+	return sunnyness.NewService(cache, api, is, logger), api, cache
 }

@@ -1,14 +1,15 @@
 package sunnyness
 
 import (
+	s "backend/shared"
 	"context"
 
 	"github.com/go-kit/kit/endpoint"
 )
 
 type GetSunnynessGridRequest struct {
-	Box       Box       `json:"box"`
-	NumPoints NumPoints `json:"num_points"`
+	Box       s.Box       `json:"box"`
+	NumPoints s.NumPoints `json:"num_points"`
 }
 
 type GetSunnynessGridResponse struct {

@@ -1,6 +1,7 @@
 package infra
 
 import (
+	s "backend/shared"
 	"backend/sunnyness"
 	"errors"
 	"fmt"
@@ -35,7 +36,7 @@ func NewCache(logger log.Logger) sunnyness.Cache {
 	}
 }
 
-func (cache *cache) GetSunnyness(p *sunnyness.Point) (float32, error) {
+func (cache *cache) GetSunnyness(p *s.Point) (float32, error) {
 	val, err := cache.client.Get(cache.CreateCompositeKey(p)).Float32()
 	if err != nil {
 		// TODO correct error handling
@@ -45,7 +46,7 @@ func (cache *cache) GetSunnyness(p *sunnyness.Point) (float32, error) {
 	return val, nil
 }
 
-func (cache *cache) SetSunnyness(p *sunnyness.Point) error {
+func (cache *cache) SetSunnyness(p *s.Point) error {
 	status_cmd := cache.client.Set(cache.CreateCompositeKey(p), p.Val, TTLMinutes)
 	if err := status_cmd.Err(); err != nil {
 		// TODO correct error handling
@@ -54,7 +55,7 @@ func (cache *cache) SetSunnyness(p *sunnyness.Point) error {
 	return nil
 }
 
-func (cache *cache) SetSunnynesses(points []*sunnyness.Point) error {
+func (cache *cache) SetSunnynesses(points []*s.Point) error {
 	for _, p := range points {
 		err := cache.SetSunnyness(p)
 		if err != nil {
@@ -65,7 +66,7 @@ func (cache *cache) SetSunnynesses(points []*sunnyness.Point) error {
 	return nil
 }
 
-func (cache *cache) CreateCompositeKey(p *sunnyness.Point) string {
+func (cache *cache) CreateCompositeKey(p *s.Point) string {
 	return fmt.Sprintf("%v:%v", p.Lat, p.Lng)
 }
 

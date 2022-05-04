@@ -15,6 +15,10 @@ require (
 	github.com/RobinRCM/sklearn v0.0.0-20200210161243-a35b0cbbede2 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
+	golang.org/x/mod v0.4.2 // indirect
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	golang.org/x/tools v0.1.1 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gonum.org/v1/gonum v0.6.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

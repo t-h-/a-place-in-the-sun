@@ -1,10 +1,11 @@
-package infra
+package weatherapi
 
 import (
-	"backend/sunnyness"
+	s "backend/shared"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 	"time"
 
@@ -22,6 +23,11 @@ var (
 	ApiErr = errors.New("Unable to handle Api Request")
 )
 
+//go:generate mockgen -destination=../mocks/mock_api.go -package=mocks . WeatherApi
+type WeatherApi interface {
+	QueryPoints(points []*s.Point)
+}
+
 type api struct {
 	client               *http.Client
 	Ratelimiter          *rate.Limiter
@@ -32,8 +38,11 @@ type api struct {
 }
 
 func NewApi(apiKey string, maxRequestsPerSecond int, maxRequestBurst int, logger log.Logger) *api {
+	c := http.Client{
+		Timeout: 7 * time.Second,
+	}
 	return &api{
-		client:               http.DefaultClient,
+		client:               &c,
 		Ratelimiter:          rate.NewLimiter(rate.Every(time.Duration(1000/maxRequestsPerSecond)*time.Millisecond), maxRequestBurst),
 		logger:               log.With(logger, "api", "weatherapi.com"),
 		MaxRequestsPerSecond: maxRequestsPerSecond,
@@ -42,18 +51,19 @@ func NewApi(apiKey string, maxRequestsPerSecond int, maxRequestBurst int, logger
 	}
 }
 
-func (api *api) QueryPoints(points []*sunnyness.Point) {
-
+func (api *api) QueryPoints(points []*s.Point) {
 	var errs chan error = make(chan error, 1000)
 	var wg sync.WaitGroup
-	for _, p := range points {
+	var flag bool = true
+	for i, p := range points {
 		wg.Add(1)
+		level.Debug(api.logger).Log("msg", "cur open gorouts", "iteration", i, "open", runtime.NumGoroutine())
 		go api.QueryPoint(p, &wg, errs)
 	}
 	go func() {
-		level.Info(api.logger).Log("432", "entering anonymous func")
 		wg.Wait()
-		level.Info(api.logger).Log("1234", "closing err channel")
+		flag = false
+		level.Debug(api.logger).Log("mdg", "closing err channel")
 		close(errs)
 	}()
 
@@ -61,10 +71,15 @@ func (api *api) QueryPoints(points []*sunnyness.Point) {
 		// TODO what to do with unqueried points?
 		level.Info(api.logger).Log("msg", "errs for querying point", "errs", er)
 	}
+
+	for flag {
+		level.Info(api.logger).Log("msg", "open", "routines", runtime.NumGoroutine())
+		time.Sleep(500 * time.Millisecond)
+	}
 	level.Info(api.logger).Log("huhu", "huhu")
 }
 
-func (api *api) QueryPoint(p *sunnyness.Point, wg *sync.WaitGroup, errs chan error) error {
+func (api *api) QueryPoint(p *s.Point, wg *sync.WaitGroup, errs chan error) error {
 	defer wg.Done()
 	reqURL := "http://api.weatherapi.com/v1/current.json"
 	req, _ := http.NewRequest("GET", reqURL, nil)
