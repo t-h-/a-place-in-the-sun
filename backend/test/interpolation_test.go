@@ -55,5 +55,5 @@ func createInterpol() interpolation.InterpolationService {
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
 
-	return interpolation.NewService(logger)
+	return interpolation.NewInterpolationService(logger)
 }

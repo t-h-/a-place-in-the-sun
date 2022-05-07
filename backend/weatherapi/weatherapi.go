@@ -52,34 +52,25 @@ func NewApi(apiKey string, maxRequestsPerSecond int, maxRequestBurst int, logger
 }
 
 func (api *api) QueryPoints(points []*s.Point) {
-	var errs chan error = make(chan error, 1000)
 	var wg sync.WaitGroup
 	var flag bool = true
-	for i, p := range points {
+	for _, p := range points {
 		wg.Add(1)
-		level.Debug(api.logger).Log("msg", "cur open gorouts", "iteration", i, "open", runtime.NumGoroutine())
-		go api.QueryPoint(p, &wg, errs)
+		go api.QueryPoint(p, &wg)
 	}
 	go func() {
 		wg.Wait()
 		flag = false
-		level.Debug(api.logger).Log("mdg", "closing err channel")
-		close(errs)
+		level.Debug(api.logger).Log("msg", "done querying")
 	}()
 
-	for er := range errs {
-		// TODO what to do with unqueried points?
-		level.Info(api.logger).Log("msg", "errs for querying point", "errs", er)
-	}
-
 	for flag {
-		level.Info(api.logger).Log("msg", "open", "routines", runtime.NumGoroutine())
+		level.Debug(api.logger).Log("msg", "open", "routines", runtime.NumGoroutine())
 		time.Sleep(500 * time.Millisecond)
 	}
-	level.Info(api.logger).Log("huhu", "huhu")
 }
 
-func (api *api) QueryPoint(p *s.Point, wg *sync.WaitGroup, errs chan error) error {
+func (api *api) QueryPoint(p *s.Point, wg *sync.WaitGroup) error {
 	defer wg.Done()
 	reqURL := "http://api.weatherapi.com/v1/current.json"
 	req, _ := http.NewRequest("GET", reqURL, nil)
@@ -90,24 +81,19 @@ func (api *api) QueryPoint(p *s.Point, wg *sync.WaitGroup, errs chan error) erro
 	req.URL.RawQuery = q.Encode()
 	resp, err := api.do(req)
 	if err != nil {
-		level.Error(api.logger).Log("43", err)
-		// TODO error handling
-		errs <- err
+		level.Error(api.logger).Log("msg", "error while executing request", "error", err, "lat", p.Lat, "lng", p.Lng)
 		return ApiErr
 	}
 
 	if resp.StatusCode != 200 {
-		level.Error(api.logger).Log("msg", "Not able to handle request", "status_code", resp.StatusCode)
-		errs <- err
+		level.Error(api.logger).Log("msg", "Not able to handle request", "status_code", resp.StatusCode, "lat", p.Lat, "lng", p.Lng)
 		return ApiErr
 	}
 
 	res, err := api.unmarshal(resp)
 	if err != nil {
-		// TODO error handling
-		level.Error(api.logger).Log("5")
-		errs <- err
-		return err
+		level.Error(api.logger).Log("msg", "Can not unmarshal JSON", "error", err, "lat", p.Lat, "lng", p.Lng)
+		return ApiErr
 	}
 	p.Val = float32(100 - res.Current.Cloud)
 	return nil
@@ -117,13 +103,13 @@ func (api *api) do(req *http.Request) (*http.Response, error) {
 	ctx := context.Background()
 	err := api.Ratelimiter.Wait(ctx)
 	if err != nil {
-		level.Error(api.logger).Log("9") // TODO error handling
+		level.Error(api.logger).Log("msg", "error when waiting for ratelimiter", "error", err)
 		return nil, err
 	}
-	level.Debug(api.logger).Log("msg", "Requesting point", "req", req.URL)
+	level.Debug(api.logger).Log("msg", "requesting point", "req", req.URL)
 	resp, err := api.client.Do(req)
 	if err != nil {
-		level.Error(api.logger).Log("6", err) // TODO error handling
+		level.Error(api.logger).Log("msg", "request failed", "error", err)
 		return nil, err
 	}
 	return resp, nil
@@ -135,7 +121,6 @@ func (api *api) unmarshal(resp *http.Response) (Response, error) {
 
 	var result Response
 	if err := json.Unmarshal(body, &result); err != nil {
-		level.Error(api.logger).Log("msg", "Can not unmarshal JSON") // TODO proper logging and error handling
 		return Response{}, err
 	}
 	return result, nil

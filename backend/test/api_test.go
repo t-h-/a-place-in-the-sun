@@ -15,7 +15,6 @@ const ApiKey = "591b7934afcf484fa3191051223101"
 const MaxRequestsPerSecond = 1
 const MaxRequestBurst = 200
 
-// TODO load test rate limiting
 func TestQuery(t *testing.T) {
 	var flooredStepLat float32 = 0.1
 	var flooredStepLng float32 = 0.1

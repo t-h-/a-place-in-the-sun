@@ -16,9 +16,9 @@ type Interpolationservice struct {
 	logger log.Logger
 }
 
-func NewService(logger log.Logger) *Interpolationservice {
+func NewInterpolationService(logger log.Logger) *Interpolationservice {
 	return &Interpolationservice{
-		logger: logger,
+		logger: log.With(logger, "method", "bilinear interpolation"),
 	}
 }
 

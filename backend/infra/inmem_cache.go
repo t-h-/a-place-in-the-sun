@@ -23,7 +23,7 @@ type inmemcache struct {
 	logger log.Logger
 }
 
-func NewInmemCache(lifeWindowSec int, logger log.Logger) *inmemcache {
+func NewInmemCache(lifeWindowSec int, logger log.Logger) (*inmemcache, error) {
 	bCache, err := bigcache.NewBigCache(bigcache.Config{
 		// number of shards (must be a power of 2)
 		Shards: 1024,
@@ -62,28 +62,27 @@ func NewInmemCache(lifeWindowSec int, logger log.Logger) *inmemcache {
 		OnRemoveWithReason: nil,
 	})
 	if err != nil {
-		// return nil, fmt.Errorf("new big cache: %w", err)
-		// TODO error handling, panic?
+		level.Error(logger).Log("msg", "error creating cache", "error", err)
+		return nil, err
 	}
 
 	return &inmemcache{
 		sun:    bCache,
 		logger: log.With(logger, "cache", "inmem"),
-	}
+	}, nil
 }
 
 func (inmemcache *inmemcache) GetSunnyness(p *s.Point) (float32, error) {
 	bs, err := inmemcache.sun.Get(inmemcache.CreateCompositeKey(p))
-	// TODO error handling
 	if err != nil {
 		if errors.Is(err, bigcache.ErrEntryNotFound) {
 			return -1, InmemCacheErr
 		}
 
-		return -1, fmt.Errorf("get: %w", err)
+		return -1, err
 	}
 
-	v, err := ByteToFloat32(bs)
+	v, err := inmemcache.ByteToFloat32(bs)
 	if err != nil {
 		return -1, err
 	}
@@ -92,9 +91,9 @@ func (inmemcache *inmemcache) GetSunnyness(p *s.Point) (float32, error) {
 }
 
 func (inmemcache *inmemcache) SetSunnyness(p *s.Point) error {
-	f, err := Float32ToByte(p.Val)
+	f, err := inmemcache.Float32ToByte(p.Val)
 	if err != nil {
-		// TODO error handling
+		return err
 	}
 	return inmemcache.sun.Set(inmemcache.CreateCompositeKey(p), f)
 }
@@ -103,7 +102,6 @@ func (inmemcache *inmemcache) SetSunnynesses(points []*s.Point) error {
 	for _, p := range points {
 		err := inmemcache.SetSunnyness(p)
 		if err != nil {
-			// TODO error handling
 			return err
 		}
 	}
@@ -115,28 +113,19 @@ func (cache *inmemcache) CreateCompositeKey(p *s.Point) string {
 	return fmt.Sprintf("%v:%v", p.Lat, p.Lng)
 }
 
-func Float32ToByte(f float32) ([]byte, error) {
+func (inmemcache *inmemcache) Float32ToByte(f float32) ([]byte, error) {
 	var buf bytes.Buffer
 	err := binary.Write(&buf, binary.BigEndian, f)
 	if err != nil {
-		// TODO error handling
-		fmt.Println("binary.Write failed:", err)
+		level.Debug(inmemcache.logger).Log("msg", "binary.Write failed")
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func ByteToFloat32(bs []byte) (float32, error) {
-	fdsa := binary.BigEndian.Uint32(bs)
-	asdf := math.Float32frombits(fdsa)
+func (inmemcache *inmemcache) ByteToFloat32(bs []byte) (float32, error) {
+	uintOfByte := binary.BigEndian.Uint32(bs)
+	floatOfByte := math.Float32frombits(uintOfByte)
 
-	// var f float32
-	// var r = bytes.NewReader(bs)
-	// err := binary.Read(r, binary.BigEndian, f)
-	// if err != nil {
-	// 	// TODO error handling
-	// 	fmt.Println("binary.Read failed:", err)
-	// 	return -1, err
-	// }
-	return asdf, nil
+	return floatOfByte, nil
 }

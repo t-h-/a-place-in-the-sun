@@ -23,6 +23,7 @@ type cache struct {
 	logger log.Logger
 }
 
+// TODO implement if necessary...
 func NewCache(logger log.Logger) sunnyness.Cache {
 	redisConn, err := connectToRedis()
 	if err != nil {
@@ -39,7 +40,7 @@ func NewCache(logger log.Logger) sunnyness.Cache {
 func (cache *cache) GetSunnyness(p *s.Point) (float32, error) {
 	val, err := cache.client.Get(cache.CreateCompositeKey(p)).Float32()
 	if err != nil {
-		// TODO correct error handling
+		// correct error handling
 		return -1, ErrIdNotFound
 	}
 
@@ -49,7 +50,7 @@ func (cache *cache) GetSunnyness(p *s.Point) (float32, error) {
 func (cache *cache) SetSunnyness(p *s.Point) error {
 	status_cmd := cache.client.Set(cache.CreateCompositeKey(p), p.Val, TTLMinutes)
 	if err := status_cmd.Err(); err != nil {
-		// TODO correct error handling
+		// correct error handling
 		return err
 	}
 	return nil
@@ -59,7 +60,7 @@ func (cache *cache) SetSunnynesses(points []*s.Point) error {
 	for _, p := range points {
 		err := cache.SetSunnyness(p)
 		if err != nil {
-			// TODO error handling
+			// error handling
 			return err
 		}
 	}

@@ -1,6 +1,7 @@
 package sunnyness
 
 import (
+	"fmt"
 	"time"
 
 	"backend/interpolation"
@@ -44,19 +45,9 @@ func NewService(cache Cache, api weatherapi.WeatherApi, is interpolation.Interpo
 
 func (srv *Sunynessservice) GetGrid(b s.Box, n s.NumPoints) (SunnynessGrid, error) {
 	start := time.Now()
-	logger := log.With(srv.logger, "method", "GetGrid")
-	level.Info(logger).Log("SERV", "getting grid")
+	level.Info(srv.logger).Log("msg", "getting grid", "box", fmt.Sprintf("%v", b), "numPoints", fmt.Sprintf("%v", n))
 
-	var diffLat float32 = b.BottomRightLat - b.TopLeftLat
-	var diffLng float32 = b.BottomRightLng - b.TopLeftLng
-	stepLat := s.Max(s.Abs(diffLat)/float32(n.Lat), MinDegreeStep)
-	stepLng := s.Max(s.Abs(diffLng)/float32(n.Lng), MinDegreeStep)
-
-	stepLat *= s.Sign(diffLat)
-	stepLng *= s.Sign(diffLng)
-
-	stepLat = s.FloorToDecimal(stepLat, NumDecimalPlaces)
-	stepLng = s.FloorToDecimal(stepLng, NumDecimalPlaces)
+	stepLat, stepLng := calculateStepSizes(b, n)
 
 	coords := CreateSnappedGridCoordinates(b, stepLat, stepLng)
 
@@ -64,11 +55,11 @@ func (srv *Sunynessservice) GetGrid(b s.Box, n s.NumPoints) (SunnynessGrid, erro
 	for _, c := range coords {
 		sunnyness, err := srv.cache.GetSunnyness(c)
 		if err != nil {
-			level.Debug(logger).Log("SERV", "cache miss", "lat", c.Lat, "lng", c.Lng)
+			level.Debug(srv.logger).Log("msg", "cache miss", "lat", c.Lat, "lng", c.Lng)
 			queryPoints = append(queryPoints, c)
 			continue
 		}
-		level.Debug(logger).Log("SERV", "cache hit", "lat", c.Lat, "lng", c.Lng)
+		level.Debug(srv.logger).Log("msg", "cache hit", "lat", c.Lat, "lng", c.Lng)
 		c.Val = sunnyness
 		cachePoints = append(cachePoints, c)
 	}
@@ -81,10 +72,11 @@ func (srv *Sunynessservice) GetGrid(b s.Box, n s.NumPoints) (SunnynessGrid, erro
 	allPoints := srv.interpolationService.InterpolateGrid(queryPoints, b, n)
 
 	elapsed := time.Since(start)
-	level.Info(logger).Log("Elapsed time", elapsed)
+	level.Info(srv.logger).Log("msg", "Elapsed time", "total", elapsed) // TODO longterm: use middleware for this
 
 	return SunnynessGrid{
-		Points: allPoints,
+		NumPoints: len(allPoints),
+		Points:    allPoints,
 	}, nil
 }
 
@@ -112,6 +104,22 @@ func Snap(val float32, step float32) float32 {
 	return res
 }
 
+func calculateStepSizes(b s.Box, n s.NumPoints) (float32, float32) {
+	var diffLat float32 = b.BottomRightLat - b.TopLeftLat
+	var diffLng float32 = b.BottomRightLng - b.TopLeftLng
+	stepLat := s.Max(s.Abs(diffLat)/float32(n.Lat), MinDegreeStep)
+	stepLng := s.Max(s.Abs(diffLng)/float32(n.Lng), MinDegreeStep)
+
+	stepLat *= s.Sign(diffLat)
+	stepLng *= s.Sign(diffLng)
+
+	stepLat = s.FloorToDecimal(stepLat, NumDecimalPlaces)
+	stepLng = s.FloorToDecimal(stepLng, NumDecimalPlaces)
+
+	return stepLat, stepLng
+}
+
 type SunnynessGrid struct {
-	Points []*s.Point `json:"values"`
+	NumPoints int        `json:"numPoints"`
+	Points    []*s.Point `json:"values"`
 }
