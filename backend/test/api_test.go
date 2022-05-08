@@ -12,13 +12,11 @@ import (
 )
 
 const ApiKey = "591b7934afcf484fa3191051223101"
-const MaxRequestsPerSecond = 1
-const MaxRequestBurst = 200
 
 func TestQuery(t *testing.T) {
 	var flooredStepLat float32 = 0.1
 	var flooredStepLng float32 = 0.1
-	b := s.Box{TopLeftLat: 9, TopLeftLng: 9, BottomRightLat: 100, BottomRightLng: 100}
+	b := s.Box{TopLeftLat: 9, TopLeftLng: 9, BottomRightLat: 10, BottomRightLng: 10}
 	ps := sunnyness.CreateSnappedGridCoordinates(b, flooredStepLat, flooredStepLng)
 
 	api := createApi()
@@ -31,7 +29,7 @@ func TestQuery(t *testing.T) {
 }
 
 func createApi() weatherapi.WeatherApi {
-	s.LoadConfig()
+	s.LoadConfigFromYaml("config.test.local.yml")
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
 

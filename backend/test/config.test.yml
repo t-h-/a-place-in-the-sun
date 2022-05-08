@@ -1,0 +1,8 @@
+---
+WeatherApiKey: "THE_API_KEY_HERE"
+WeatherApiMaxRequestsPerSecond: 1000
+WeatherApiClientTimeoutSec: 5
+CacheMaxLifeWindowSec: 20
+AppDebug: false
+AppNumDecimalPlaces: 2
+AppMinDegreeStep: 0.1

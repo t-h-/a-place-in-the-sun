@@ -57,11 +57,12 @@ func TestCreateCoords(t *testing.T) {
 func TestGetGrid(t *testing.T) {
 	fmt.Println("TEST GetGrid()")
 
-	svc, mock_api, mock_cache := injectMocks(t)
+	svc, mock_api, mock_cache, mock_is := injectMocks(t)
 
+	mock_is.EXPECT().InterpolateGrid(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]*s.Point{s.NewPoint(1, 1), s.NewPoint(2, 2)})
 	mock_cache.EXPECT().GetSunnyness(gomock.Any()).AnyTimes().Return(float32(1.1), nil)
-	mock_cache.EXPECT().SetSunnyness(gomock.Any()).AnyTimes().Return("cool", nil)
-	mock_cache.EXPECT().SetSunnynesses(gomock.Any()).AnyTimes().Return("cool", nil)
+	mock_cache.EXPECT().SetSunnyness(gomock.Any()).AnyTimes().Return(nil)
+	mock_cache.EXPECT().SetSunnynesses(gomock.Any()).AnyTimes().Return(nil)
 	mock_api.EXPECT().QueryPoints(gomock.Any()).AnyTimes().Return()
 
 	b := s.Box{TopLeftLat: 1.11, TopLeftLng: 1.11, BottomRightLat: 3.33, BottomRightLng: 3.33}
@@ -73,11 +74,11 @@ func TestGetGrid(t *testing.T) {
 	// }
 }
 
-func injectMocks(t *testing.T) (sunnyness.SunnynessService, *mocks.MockWeatherApi, *mocks.MockCache) {
+func injectMocks(t *testing.T) (sunnyness.SunnynessService, *mocks.MockWeatherApi, *mocks.MockCache, *mocks.MockInterpolationService) {
 
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
-	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "listen", "8083", "caller", log.DefaultCaller)
+	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "debug", "true", "caller", log.DefaultCaller)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -86,5 +87,5 @@ func injectMocks(t *testing.T) (sunnyness.SunnynessService, *mocks.MockWeatherAp
 	api := mocks.NewMockWeatherApi(ctrl)
 	is := mocks.NewMockInterpolationService(ctrl)
 
-	return sunnyness.NewService(cache, api, is, logger), api, cache
+	return sunnyness.NewService(cache, api, is, logger), api, cache, is
 }

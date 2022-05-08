@@ -5,13 +5,11 @@ import (
 	"testing"
 
 	"backend/infra"
-	s "backend/shared"
 
 	"github.com/go-kit/log"
 )
 
 func TestReader(t *testing.T) {
-	s.LoadConfig()
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
 	c, _ := infra.NewInmemCache(logger)

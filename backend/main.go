@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	s.LoadConfig()
+	s.LoadConfigFromEnv()
 
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
