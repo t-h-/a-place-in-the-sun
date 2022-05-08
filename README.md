@@ -5,6 +5,8 @@ A educational implementation of a service visualizing sunnyness on a map (sunnyn
 ### Backend
 - standalone: `cd backend && ./restart.sh`
 - docker:
+    - `docker build -t sunnyness .`
+    - `docker run --name c_sunnyness --env-file ./.env.local -p 8083:8083 sunnyness`
 - a `launch.json` for VS Code is included
 - didn't get everything around modules so far, sometimes `export GO111MODULE="auto"` helps (running app/tests in combination with IDE etc...)
 
