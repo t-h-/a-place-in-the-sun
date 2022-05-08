@@ -55,11 +55,11 @@ func (srv *Sunynessservice) GetGrid(b s.Box, n s.NumPoints) (SunnynessGrid, erro
 	for _, c := range coords {
 		sunnyness, err := srv.cache.GetSunnyness(c)
 		if err != nil {
-			level.Debug(srv.logger).Log("msg", "cache miss", "lat", c.Lat, "lng", c.Lng)
+			// level.Debug(srv.logger).Log("msg", "cache miss", "lat", c.Lat, "lng", c.Lng)
 			queryPoints = append(queryPoints, c)
 			continue
 		}
-		level.Debug(srv.logger).Log("msg", "cache hit", "lat", c.Lat, "lng", c.Lng)
+		// level.Debug(srv.logger).Log("msg", "cache hit", "lat", c.Lat, "lng", c.Lng)
 		c.Val = sunnyness
 		cachePoints = append(cachePoints, c)
 	}
@@ -72,7 +72,7 @@ func (srv *Sunynessservice) GetGrid(b s.Box, n s.NumPoints) (SunnynessGrid, erro
 	allPoints := srv.interpolationService.InterpolateGrid(queryPoints, b, n)
 
 	elapsed := time.Since(start)
-	level.Info(srv.logger).Log("msg", "Elapsed time", "total", elapsed) // TODO longterm: use middleware for this
+	level.Debug(srv.logger).Log("msg", "Elapsed time", "total", elapsed) // TODO longterm: use middleware for this
 
 	return SunnynessGrid{
 		NumPoints: len(allPoints),

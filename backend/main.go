@@ -6,6 +6,7 @@ import (
 
 	"backend/infra"
 	"backend/interpolation"
+	s "backend/shared"
 	"backend/sunnyness"
 	"backend/weatherapi"
 
@@ -13,27 +14,20 @@ import (
 	"github.com/go-kit/kit/log/level"
 )
 
-// TODO get from .env / wrap in config package
-
-const MaxRequestsPerSecond int = 1000
-const MaxRequestBurst int = 1000
-const CacheMaxLifeWindowSec int = 30
-const debug bool = false
-
 func main() {
-	var ApiKeyy string = "591b7934afcf484fa3191051223101" // TODO not passed/passed empty when defined outside of main()
+	s.LoadConfig()
 
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
-	if debug {
+	if s.Config.AppDebug {
 		logger = level.NewFilter(logger, level.AllowDebug())
 	} else {
 		logger = level.NewFilter(logger, level.AllowInfo())
 	}
 	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 
-	cache, _ := infra.NewInmemCache(CacheMaxLifeWindowSec, logger)
-	api := weatherapi.NewApi(ApiKeyy, MaxRequestsPerSecond, MaxRequestBurst, logger)
+	cache, _ := infra.NewInmemCache(logger)
+	api := weatherapi.NewApi(logger)
 	is := interpolation.NewInterpolationService(logger)
 
 	svc := sunnyness.NewService(cache, api, is, logger)

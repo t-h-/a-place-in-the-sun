@@ -12,8 +12,11 @@ require (
 )
 
 require (
+	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/RobinRCM/sklearn v0.0.0-20200210161243-a35b0cbbede2 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
+	github.com/ilyakaznacheev/cleanenv v1.2.6 // indirect
+	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
@@ -21,6 +24,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gonum.org/v1/gonum v0.6.1 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
 )
 
 require (

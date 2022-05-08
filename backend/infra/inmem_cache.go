@@ -14,6 +14,7 @@ import (
 	"github.com/go-kit/log/level"
 )
 
+// TODO longterm: translate/unify all lower level errors to here defined errors
 var (
 	InmemCacheErr = errors.New("Unable to handle Inmem")
 )
@@ -23,7 +24,8 @@ type inmemcache struct {
 	logger log.Logger
 }
 
-func NewInmemCache(lifeWindowSec int, logger log.Logger) (*inmemcache, error) {
+func NewInmemCache(logger log.Logger) (*inmemcache, error) {
+	lifeWindowSec := s.Config.CacheMaxLifeWindowSec
 	bCache, err := bigcache.NewBigCache(bigcache.Config{
 		// number of shards (must be a power of 2)
 		Shards: 1024,

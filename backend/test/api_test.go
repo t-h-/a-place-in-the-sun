@@ -31,8 +31,9 @@ func TestQuery(t *testing.T) {
 }
 
 func createApi() weatherapi.WeatherApi {
+	s.LoadConfig()
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
 
-	return weatherapi.NewApi(ApiKey, MaxRequestsPerSecond, MaxRequestBurst, logger)
+	return weatherapi.NewApi(logger)
 }

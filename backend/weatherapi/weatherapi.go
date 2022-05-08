@@ -19,6 +19,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// TODO longterm: translate/unify all lower level errors to here defined errors
 var (
 	ApiErr = errors.New("Unable to handle Api Request")
 )
@@ -29,25 +30,21 @@ type WeatherApi interface {
 }
 
 type api struct {
-	client               *http.Client
-	Ratelimiter          *rate.Limiter
-	logger               log.Logger
-	ApiKey               string
-	MaxRequestsPerSecond int
-	MaxRequestBurst      int
+	client      *http.Client
+	Ratelimiter *rate.Limiter
+	logger      log.Logger
 }
 
-func NewApi(apiKey string, maxRequestsPerSecond int, maxRequestBurst int, logger log.Logger) *api {
+func NewApi(logger log.Logger) *api {
+	clientTimeoutSec := s.Config.WeatherApiClientTimeoutSec
+	maxRequestsPerSecond := s.Config.WeatherApiMaxRequestsPerSecond
 	c := http.Client{
-		Timeout: 7 * time.Second,
+		Timeout: time.Duration(clientTimeoutSec) * time.Second,
 	}
 	return &api{
-		client:               &c,
-		Ratelimiter:          rate.NewLimiter(rate.Every(time.Duration(1000/maxRequestsPerSecond)*time.Millisecond), maxRequestBurst),
-		logger:               log.With(logger, "api", "weatherapi.com"),
-		MaxRequestsPerSecond: maxRequestsPerSecond,
-		MaxRequestBurst:      maxRequestBurst,
-		ApiKey:               apiKey,
+		client:      &c,
+		Ratelimiter: rate.NewLimiter(rate.Every(time.Duration(1000/maxRequestsPerSecond)*time.Millisecond), maxRequestsPerSecond),
+		logger:      log.With(logger, "api", "weatherapi.com"),
 	}
 }
 
@@ -76,7 +73,7 @@ func (api *api) QueryPoint(p *s.Point, wg *sync.WaitGroup) error {
 	req, _ := http.NewRequest("GET", reqURL, nil)
 	coords := fmt.Sprintf("%v,%v", p.Lat, p.Lng)
 	q := req.URL.Query()
-	q.Add("key", api.ApiKey)
+	q.Add("key", s.Config.WeatherApiKey)
 	q.Add("q", coords)
 	req.URL.RawQuery = q.Encode()
 	resp, err := api.do(req)
@@ -106,7 +103,7 @@ func (api *api) do(req *http.Request) (*http.Response, error) {
 		level.Error(api.logger).Log("msg", "error when waiting for ratelimiter", "error", err)
 		return nil, err
 	}
-	level.Debug(api.logger).Log("msg", "requesting point", "req", req.URL)
+	// level.Debug(api.logger).Log("msg", "requesting point", "req", req.URL)
 	resp, err := api.client.Do(req)
 	if err != nil {
 		level.Error(api.logger).Log("msg", "request failed", "error", err)
