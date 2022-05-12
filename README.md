@@ -3,10 +3,11 @@ A educational implementation of a service visualizing sunnyness on a map (sunnyn
 
 ## Run
 ### Backend
-- standalone: `cd backend && ./restart.sh`
+- standalone: `cd backend && ./start.sh`
 - docker:
     - `docker build -t sunnyness .`
     - `docker run --name c_sunnyness --env-file ./.env.local -p 8083:8083 sunnyness`
+    - `docker start c_sunnyness`
 - a `launch.json` for VS Code is included
 - didn't get everything around modules so far, sometimes `export GO111MODULE="auto"` helps (running app/tests in combination with IDE etc...)
 
@@ -21,5 +22,7 @@ A educational implementation of a service visualizing sunnyness on a map (sunnyn
 - THEREFORE: make sure to add your `GOPATH` to your `PATH` so that `mockgen` is runnable the following command can run:
 - Generate mocks (from within `./backend`): `go generate ./...`
 
+#### Notes
+- at some point I had to run `go get github.com/go-kit/kit/circuitbreaker@v0.12.0`. `go mod tidy|download` would not do the trick.
 
 ### Frontend
