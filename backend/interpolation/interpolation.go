@@ -49,8 +49,8 @@ func (i *Interpolationservice) InterpolateGrid(points []*s.Point, b s.Box, n s.N
 			ip := ifunc(lat, lng)
 			ip = float64(s.FloorToDecimal(float32(ip), 2))
 			np := s.Point{
-				Lat: float32(lat),
-				Lng: float32(lng),
+				Lat: s.FloorToDecimal(float32(lat), s.Config.AppNumDecimalPlaces+2),
+				Lng: s.FloorToDecimal(float32(lng), s.Config.AppNumDecimalPlaces+2),
 				Val: float32(ip),
 			}
 			res = append(res, &np)

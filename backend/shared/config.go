@@ -7,11 +7,13 @@ import (
 )
 
 type AppConfig struct {
+	WeatherApiUrl                  string  `yaml:"WeatherApiUrl" env:"WEATHERAPI_URL" env-default:"http://api.weatherapi.com/v1/current.json"`
 	WeatherApiKey                  string  `yaml:"WeatherApiKey" env:"WEATHERAPI_KEY"`
 	WeatherApiMaxRequestsPerSecond int     `yaml:"WeatherApiMaxRequestsPerSecond" env:"WEATHERAPI_MAX_REQUESTS_PER_SECOND" env-default:"1000"`
+	WeatherApiMaxParallelRequests  int     `yaml:"WeatherApiMaxParallelRequests" env:"WEATHERAPI_MAX_PARALLEL_REQUESTS" env-default:"1000"`
 	WeatherApiClientTimeoutSec     int     `yaml:"WeatherApiClientTimeoutSec" env:"WEATHERAPI_CLIENT_TIMEOUT_SEC" env-default:"7"`
 	CacheMaxLifeWindowSec          int     `yaml:"CacheMaxLifeWindowSec" env:"CACHE_MAX_LIFE_WINDOW_SEC" env-default:"1600"`
-	AppDebug                       bool    `yaml:"AppDebug" env:"APP_DEBUG" env-default:"false"`
+	AppDebug                       bool    `yaml:"AppDebug" env:"APP_DEBUG" env-default:"true"`
 	AppNumDecimalPlaces            int     `yaml:"AppNumDecimalPlaces" env:"APP_NUM_DECIMAL_PLACES" env-default:"2"`
 	AppMinDegreeStep               float32 `yaml:"AppMinDegreeStep" env:"APP_MIN_DEGREE_STEP" env-default:"0.1"`
 }

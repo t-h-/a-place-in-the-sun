@@ -14,9 +14,12 @@ require (
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/RobinRCM/sklearn v0.0.0-20200210161243-a35b0cbbede2 // indirect
+	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/ilyakaznacheev/cleanenv v1.2.6 // indirect
 	github.com/joho/godotenv v1.3.0 // indirect
+	github.com/sony/gobreaker v0.4.1 // indirect
+	github.com/streadway/handy v0.0.0-20200128134331-0f66f006fb2e // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect

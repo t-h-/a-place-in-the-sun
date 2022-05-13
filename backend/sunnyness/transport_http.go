@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	kitlog "github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/go-kit/kit/transport"
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
@@ -32,7 +33,7 @@ func NewHttpServer(svc SunnynessService, logger kitlog.Logger) *mux.Router {
 
 func newServerFinalizer(logger kitlog.Logger) kithttp.ServerFinalizerFunc {
 	return func(ctx context.Context, code int, r *http.Request) {
-		logger.Log("status", code, "path", r.RequestURI, "method", r.Method, "params", fmt.Sprint(r.URL.Query()))
+		level.Info(logger).Log("status", code, "path", r.RequestURI, "method", r.Method, "params", fmt.Sprint(r.URL.Query()))
 	}
 }
 

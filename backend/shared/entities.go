@@ -24,8 +24,8 @@ type Point struct {
 
 func NewPoint(lat float32, lng float32) *Point {
 	return &Point{
-		Lat: FloorToDecimal(lat, 2), // TODO read this from global var
-		Lng: FloorToDecimal(lng, 2),
+		Lat: FloorToDecimal(lat, Config.AppNumDecimalPlaces),
+		Lng: FloorToDecimal(lng, Config.AppNumDecimalPlaces),
 		Val: -1,
 	}
 }

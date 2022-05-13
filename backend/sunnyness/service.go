@@ -1,15 +1,18 @@
 package sunnyness
 
 import (
-	"fmt"
-	"time"
-
 	"backend/interpolation"
 	s "backend/shared"
 	"backend/weatherapi"
+	"context"
+	"fmt"
+	"runtime"
+	"sync"
+	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"golang.org/x/time/rate"
 )
 
 const NumDecimalPlaces int = 1
@@ -29,15 +32,15 @@ type SunnynessService interface {
 
 type Sunynessservice struct {
 	cache                Cache
-	api                  weatherapi.WeatherApi
+	weather              weatherapi.WeatherService
 	interpolationService interpolation.InterpolationService
 	logger               log.Logger
 }
 
-func NewService(cache Cache, api weatherapi.WeatherApi, is interpolation.InterpolationService, logger log.Logger) SunnynessService {
+func NewService(cache Cache, api weatherapi.WeatherService, is interpolation.InterpolationService, logger log.Logger) SunnynessService {
 	return &Sunynessservice{
 		cache:                cache,
-		api:                  api,
+		weather:              api,
 		interpolationService: is,
 		logger:               logger,
 	}
@@ -64,7 +67,7 @@ func (srv *Sunynessservice) GetGrid(b s.Box, n s.NumPoints) (SunnynessGrid, erro
 		cachePoints = append(cachePoints, c)
 	}
 
-	srv.api.QueryPoints(queryPoints)
+	srv.QueryPoints(queryPoints)
 	go srv.cache.SetSunnynesses(queryPoints)
 
 	queryPoints = append(queryPoints, cachePoints...)
@@ -72,7 +75,7 @@ func (srv *Sunynessservice) GetGrid(b s.Box, n s.NumPoints) (SunnynessGrid, erro
 	allPoints := srv.interpolationService.InterpolateGrid(queryPoints, b, n)
 
 	elapsed := time.Since(start)
-	level.Debug(srv.logger).Log("msg", "Elapsed time", "total", elapsed) // TODO longterm: use middleware for this
+	level.Debug(srv.logger).Log("msg", "Elapsed time", "total", elapsed) // TODO longterm: use instrumentation middleware for this
 
 	return SunnynessGrid{
 		NumPoints: len(allPoints),
@@ -92,7 +95,38 @@ func CreateSnappedGridCoordinates(b s.Box, stepLat float32, stepLng float32) []*
 	return res
 }
 
-// Snap snaps the given value to the
+func (srv *Sunynessservice) QueryPoints(points []*s.Point) {
+	var wg sync.WaitGroup
+	rateLimiter := rate.NewLimiter(rate.Every(time.Duration(int64(1000/float32(s.Config.WeatherApiMaxRequestsPerSecond)))*time.Millisecond), s.Config.WeatherApiMaxRequestsPerSecond)
+	var flag bool = true
+	concurrencyTokens := make(chan struct{}, s.Config.WeatherApiMaxParallelRequests)
+	for _, p := range points {
+		ctx := context.Background()
+		err := rateLimiter.Wait(ctx)
+		if err != nil {
+			level.Error(srv.logger).Log("msg", "error while waiting for ratelimiter", "error", err)
+			return
+		}
+		concurrencyTokens <- struct{}{}
+		wg.Add(1)
+		go srv.weather.QueryPoint(p, &wg, concurrencyTokens)
+	}
+	go func() {
+		wg.Wait()
+		flag = false
+		level.Debug(srv.logger).Log("msg", "done querying")
+	}()
+
+	// for debugging purposes...
+	for flag {
+		level.Debug(srv.logger).Log("msg", "open", "routines", runtime.NumGoroutine())
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+// Snap snaps the given val to the closest multiple of step. If step is positive, then to the smaller multiple,
+// if step is negative then to the bigger multiple. This is to make sure the starting point of our query is just a bit
+// outside of the requested box, so that the frontend can display the heatmap neatly.
 func Snap(val float32, step float32) float32 {
 	flooredVal := s.FloorToDecimal(val, NumDecimalPlaces)
 	var res float32

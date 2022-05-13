@@ -1,7 +1,9 @@
 package test
 
 import (
+	"context"
 	"os"
+	"sync"
 	"testing"
 
 	s "backend/shared"
@@ -19,19 +21,23 @@ func TestQuery(t *testing.T) {
 	b := s.Box{TopLeftLat: 9, TopLeftLng: 9, BottomRightLat: 10, BottomRightLng: 10}
 	ps := sunnyness.CreateSnappedGridCoordinates(b, flooredStepLat, flooredStepLng)
 
-	api := createApi()
+	srv := createWeatherService()
 
-	api.QueryPoints(ps)
+	cc := make(chan struct{}, 2)
+	var wg sync.WaitGroup
+
+	srv.QueryPoint(ps[0], &wg, cc)
 	// if len(ps) != 2 {
 	// 	t.Fatalf(`res wrong %v`, ps)
 	// }
 	// fmt.Println(ps)
 }
 
-func createApi() weatherapi.WeatherApi {
+func createWeatherService() weatherapi.WeatherService {
 	s.LoadConfigFromYaml("config.test.local.yml")
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
-
-	return weatherapi.NewApi(logger)
+	ctx := context.Background()
+	var srv weatherapi.WeatherService
+	return weatherapi.NewProxyingMiddleware(ctx, logger)(srv)
 }

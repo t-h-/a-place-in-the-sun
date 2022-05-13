@@ -63,7 +63,7 @@ func TestGetGrid(t *testing.T) {
 	mock_cache.EXPECT().GetSunnyness(gomock.Any()).AnyTimes().Return(float32(1.1), nil)
 	mock_cache.EXPECT().SetSunnyness(gomock.Any()).AnyTimes().Return(nil)
 	mock_cache.EXPECT().SetSunnynesses(gomock.Any()).AnyTimes().Return(nil)
-	mock_api.EXPECT().QueryPoints(gomock.Any()).AnyTimes().Return()
+	mock_api.EXPECT().QueryPoint(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return()
 
 	b := s.Box{TopLeftLat: 1.11, TopLeftLng: 1.11, BottomRightLat: 3.33, BottomRightLng: 3.33}
 	n := s.NumPoints{Lat: 5, Lng: 5}
@@ -74,7 +74,7 @@ func TestGetGrid(t *testing.T) {
 	// }
 }
 
-func injectMocks(t *testing.T) (sunnyness.SunnynessService, *mocks.MockWeatherApi, *mocks.MockCache, *mocks.MockInterpolationService) {
+func injectMocks(t *testing.T) (sunnyness.SunnynessService, *mocks.MockWeatherService, *mocks.MockCache, *mocks.MockInterpolationService) {
 
 	var logger log.Logger
 	logger = log.NewLogfmtLogger(os.Stderr)
@@ -84,7 +84,7 @@ func injectMocks(t *testing.T) (sunnyness.SunnynessService, *mocks.MockWeatherAp
 	defer ctrl.Finish()
 	cache := mocks.NewMockCache(ctrl)
 
-	api := mocks.NewMockWeatherApi(ctrl)
+	api := mocks.NewMockWeatherService(ctrl)
 	is := mocks.NewMockInterpolationService(ctrl)
 
 	return sunnyness.NewService(cache, api, is, logger), api, cache, is
