@@ -2,11 +2,9 @@ package infra
 
 import (
 	s "backend/shared"
-	"bytes"
-	"encoding/binary"
+	"backend/sunnyness"
 	"errors"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/allegro/bigcache"
@@ -24,7 +22,7 @@ type inmemcache struct {
 	logger log.Logger
 }
 
-func NewInmemCache(logger log.Logger) (*inmemcache, error) {
+func NewInmemCache(logger log.Logger) (sunnyness.Cache, error) {
 	lifeWindowSec := s.Config.CacheMaxLifeWindowSec
 	bCache, err := bigcache.NewBigCache(bigcache.Config{
 		// number of shards (must be a power of 2)
@@ -84,8 +82,9 @@ func (inmemcache *inmemcache) GetSunnyness(p *s.Point) (float32, error) {
 		return -1, err
 	}
 
-	v, err := inmemcache.ByteToFloat32(bs)
+	v, err := s.ByteToFloat32(bs)
 	if err != nil {
+		level.Debug(inmemcache.logger).Log("msg", "byte to float conversion failed")
 		return -1, err
 	}
 	level.Debug(inmemcache.logger).Log("msg", "returning value from cache", "lat", p.Lat, "lng", p.Lng, "val", p.Val)
@@ -93,8 +92,12 @@ func (inmemcache *inmemcache) GetSunnyness(p *s.Point) (float32, error) {
 }
 
 func (inmemcache *inmemcache) SetSunnyness(p *s.Point) error {
-	f, err := inmemcache.Float32ToByte(p.Val)
+	if p.Val <= 0 {
+		return nil
+	}
+	f, err := s.Float32ToByte(p.Val)
 	if err != nil {
+		level.Debug(inmemcache.logger).Log("msg", "float to byte conversion failed")
 		return err
 	}
 	return inmemcache.sun.Set(inmemcache.CreateCompositeKey(p), f)
@@ -113,21 +116,4 @@ func (inmemcache *inmemcache) SetSunnynesses(points []*s.Point) error {
 
 func (cache *inmemcache) CreateCompositeKey(p *s.Point) string {
 	return fmt.Sprintf("%v:%v", p.Lat, p.Lng)
-}
-
-func (inmemcache *inmemcache) Float32ToByte(f float32) ([]byte, error) {
-	var buf bytes.Buffer
-	err := binary.Write(&buf, binary.BigEndian, f)
-	if err != nil {
-		level.Debug(inmemcache.logger).Log("msg", "binary.Write failed")
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func (inmemcache *inmemcache) ByteToFloat32(bs []byte) (float32, error) {
-	uintOfByte := binary.BigEndian.Uint32(bs)
-	floatOfByte := math.Float32frombits(uintOfByte)
-
-	return floatOfByte, nil
 }

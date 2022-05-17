@@ -38,8 +38,25 @@ func main() {
 	is := interpolation.NewInterpolationService(logger)
 
 	svc := sunnyness.NewService(cache, weatherApi, is, logger)
-	// svc := sunnyness.NewService(cache, api, logger)
-	router := sunnyness.NewHttpServer(svc, logger)
+
+	mux := http.NewServeMux()
+	mux.Handle("/sunnyness/", sunnyness.MakeHandler(svc, logger))
+	http.Handle("/", accessControl(mux))
+
 	logger.Log("msg", "HTTP", "addr", "8083")
-	logger.Log("msg", http.ListenAndServe(":8083", router))
+	logger.Log("msg", http.ListenAndServe(":8083", nil))
+}
+
+func accessControl(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
+
+		if r.Method == "OPTIONS" {
+			return
+		}
+
+		h.ServeHTTP(w, r)
+	})
 }

@@ -13,36 +13,6 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-func TestSnap(t *testing.T) {
-	var val float32 = 0.5
-	var step float32 = 0.3
-	snap := sunnyness.Snap(val, step)
-	if snap != 0.3 {
-		t.Fatalf(`Snap wrong %v`, snap)
-	}
-
-	val = -0.5
-	step = 0.3
-	snap = sunnyness.Snap(val, step)
-	if snap != -0.6 {
-		t.Fatalf(`Snap wrong %v`, snap)
-	}
-
-	val = 0.5
-	step = -0.3
-	snap = sunnyness.Snap(val, step)
-	if snap != 0.6 {
-		t.Fatalf(`Snap wrong %v`, snap)
-	}
-
-	val = -0.5
-	step = -0.3
-	snap = sunnyness.Snap(val, step)
-	if snap != -0.3 {
-		t.Fatalf(`Snap wrong %v`, snap)
-	}
-}
-
 func TestCreateCoords(t *testing.T) {
 	var flooredStepLat float32 = 0.5
 	var flooredStepLng float32 = 0.5

@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	s "backend/shared"
-	"backend/sunnyness"
 	"backend/weatherapi"
 
 	"github.com/go-kit/log"
@@ -15,18 +14,19 @@ import (
 
 const ApiKey = "591b7934afcf484fa3191051223101"
 
-func TestQuery(t *testing.T) {
-	var flooredStepLat float32 = 0.1
-	var flooredStepLng float32 = 0.1
-	b := s.Box{TopLeftLat: 9, TopLeftLng: 9, BottomRightLat: 10, BottomRightLng: 10}
-	ps := sunnyness.CreateSnappedGridCoordinates(b, flooredStepLat, flooredStepLng)
-
+func TestQueryPoint(t *testing.T) {
 	srv := createWeatherService()
 
 	cc := make(chan struct{}, 2)
 	var wg sync.WaitGroup
 
-	srv.QueryPoint(ps[0], &wg, cc)
+	p := s.NewPoint(10, 10)
+
+	wg.Add(1)
+	cc <- struct{}{}
+	srv.QueryPoint(p, &wg, cc)
+
+	wg.Wait()
 	// if len(ps) != 2 {
 	// 	t.Fatalf(`res wrong %v`, ps)
 	// }

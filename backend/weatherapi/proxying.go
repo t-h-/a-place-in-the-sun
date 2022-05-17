@@ -31,7 +31,6 @@ type proxyService struct {
 }
 
 func (srv proxyService) QueryPoint(p *s.Point, wg *sync.WaitGroup, cc chan struct{}) {
-	level.Debug(srv.logger).Log("msg", "querying point", "lat", p.Lat, "lng", p.Lng)
 	defer wg.Done()
 	defer func() { <-cc }()
 	response, err := srv.WeatherEndpoint(srv.Context, GetWeatherRequest{
@@ -46,7 +45,9 @@ func (srv proxyService) QueryPoint(p *s.Point, wg *sync.WaitGroup, cc chan struc
 
 	resp := response.(GetWeatherResponse)
 
-	p.Val = 100 - float32(resp.Current.Cloud)
+	sun := 100 - float32(resp.Current.Cloud)
+	p.Val = sun
+	level.Debug(srv.logger).Log("msg", "queried point", "lat", p.Lat, "lng", p.Lng, "val", sun)
 }
 
 type ServiceMiddleware func(WeatherService) WeatherService
@@ -62,8 +63,8 @@ func NewProxyingMiddleware(ctx context.Context, logger log.Logger) ServiceMiddle
 }
 
 func makeWeatherEndpoint(ctx context.Context) endpoint.Endpoint {
-	// u, err := url.Parse(s.Config.WeatherApiUrl)
-	u, err := url.Parse("https://reqbin.com/echo/get/json")
+	u, err := url.Parse(s.Config.WeatherApiUrl)
+	// u, err := url.Parse("https://reqbin.com/echo/get/json")
 	if err != nil {
 		panic(err)
 	}
@@ -84,11 +85,15 @@ func makeWeatherEndpoint(ctx context.Context) endpoint.Endpoint {
 func decodeGetWeatherResponse(_ context.Context, resp *http.Response) (interface{}, error) {
 	defer resp.Body.Close()
 	var response GetWeatherResponse
+	if resp.StatusCode != 200 {
+		return nil, errors.New(fmt.Sprintf("Request not successfull. Status Code: %v", resp.StatusCode))
+	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("Request not successfull. Status Code: %v", resp.StatusCode))
+
+	if response.Current == nil {
+		return nil, errors.New("mandatory field 'current' not in response")
 	}
 	return response, nil
 }
@@ -112,8 +117,8 @@ type GetWeatherRequest struct {
 }
 
 type GetWeatherResponse struct {
-	Location Location
-	Current  Current
+	Location *Location
+	Current  *Current
 }
 
 type Location struct {
