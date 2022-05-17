@@ -48,13 +48,10 @@ export default {
       // const bnds = [lat, lng]; // this.$refs.leafletMap.mapObject.getBounds();
       const southWest = bnds.getSouthWest();
       const northEast = bnds.getNorthEast();
-      const pixelsY = this.$refs.rootC.clientHeight;
-      const pixelsX = this.$refs.rootC.clientWidth;
+      const numPointsX = { numPointsX: Math.floor(this.$refs.rootC.clientWidth / 100) };
+      const numPointsY = { numPointsY: Math.floor(this.$refs.rootC.clientHeight / 100) };
       await this.$store.dispatch('queryAllPointsInBounds', {
-        southWest, northEast, pixelsX, pixelsY,
-      });
-      this.$store.dispatch('sampleLatLngArray2', {
-        southWest, northEast, pixelsX, pixelsY,
+        northEast, southWest, numPointsX, numPointsY,
       });
       const lla = this.$store.getters.getLatLngArray;
       this.$refs.heatmapLayer.setLatLngs(lla);
