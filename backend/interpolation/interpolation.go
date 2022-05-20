@@ -23,7 +23,6 @@ func NewInterpolationService(logger log.Logger) *Interpolationservice {
 	}
 }
 
-// TODO consider moving Point to float64
 func (i *Interpolationservice) InterpolateGrid(points []*s.Point, b s.Box, n s.NumPoints) []*s.Point {
 	if len(points) > (n.Lat+2)*(n.Lng+2) {
 		level.Debug(i.logger).Log("msg", "not interpolating result since queried points satisfy requested number of points", "len_queried_points", len(points), "requested_points", n.Lat*n.Lng)
@@ -39,11 +38,10 @@ func (i *Interpolationservice) InterpolateGrid(points []*s.Point, b s.Box, n s.N
 	ifunc := interpolate.Interp2d(lats, lngs, vals)
 
 	res := []*s.Point{}
-	// stepLng := (brlng - tllng) / float64(n.Lng)
-	// stepLat := (brlat - tllat) / float64(n.Lat)
-	stepLng, stepLat := s.CalculateStepSizes(b, n)
 
+	stepLng, stepLat := s.CalculateStepSizes(b, n)
 	var latStart, lngStart, latEnd, lngEnd float32
+
 	latStart = s.Snap(s.Min(b.TopLeftLat, b.BottomRightLat), s.Abs(stepLat))
 	latEnd = s.Snap(s.Max(b.TopLeftLat, b.BottomRightLat), -1*s.Abs(stepLat))
 
